@@ -1,46 +1,190 @@
-# Soham-OKR
-SOHAM OKR
+Open MMC → Add Certificates snap-in → Local Computer.
 
-Here's how an IT Support Analyst can frame OKRs within their role:
+Locate your expired cert under Personal > Certificates.
 
----
+Renew or import a new certificate:
 
-### **OKRs from an IT Support Analyst’s Perspective**  
+If using a corporate CA, request a new one.
 
-**What are OKRs?**  
-Objectives and Key Results (OKRs) is a goal-setting framework that helps individuals, teams, and organizations define measurable goals and track progress. It consists of:  
+If using a public CA, upload the CSR, get a cert, and import it.
 
-- **Objectives** – Qualitative, ambitious statements defining what you aim to achieve.  
-- **Key Results** – Quantifiable metrics that measure how you’ll achieve your objective.  
+Bind the new certificate in IIS > Bindings.
 
-For an IT Support Analyst, OKRs help align support efforts with broader business objectives, ensuring system reliability, reducing downtime, and improving user experience.  
+Restart IIS:
 
-**Why OKRs Matter in IT Support?**  
-OKRs promote **transparency**, **alignment with business impact**, and **prioritization** of critical support tasks. They help IT teams focus on measurable improvements, like reducing incident response times or increasing automation.  
+bash
+Copy code
+iisreset
+Scenario B: Using Apache or Nginx (Linux)
+Update your .crt, .key, and .ca-bundle files as mentioned earlier, then restart the service:
 
-### **Core Principles for IT Support OKRs**  
-- Keep objectives ambitious but achievable within a quarter.  
-- Ensure key results are quantifiable (metrics-driven).  
-- Align metrics with system reliability and user satisfaction.  
-- Focus on **outcomes** (e.g., reducing downtime) rather than **outputs** (e.g., closing tickets).  
-- Limit to **3-4 objectives per quarter**, with **2-4 key results per objective**.  
+bash
+Copy code
+sudo systemctl reload apache2   # or nginx
+Scenario C: Using Load Balancer or Reverse Proxy
+If you terminate SSL at a load balancer (like AWS ALB, F5, Azure App Gateway):
 
----
+Go to the load balancer's SSL settings.
 
-### **Crafting Good IT Support OKRs**  
+Upload the renewed certificate.
 
-A well-defined OKR helps IT support teams focus on critical improvements. Here’s an example:  
+Apply and save the configuration.
 
-**O1: Improve system reliability and reduce downtime**  
-- **KR1:** Reduce **P1 incidents** from 10 to **3 per quarter**.  
-- **KR2:** Decrease **average incident resolution time** from 4 hours to **1.5 hours**.  
-- **KR3:** Increase **ticket deflection rate** via automation and knowledge base improvements from 25% to **50%**.  
-- **KR4:** Implement proactive monitoring to identify and resolve **90% of recurring issues** before they impact users.  
+Final Checks
+Visit https://chemops-cg-resources.mmm.com in a browser to confirm no “Not Secure” warning.
 
-### **Breaking It Down:**  
-- **Ambitious yet realistic:** Aiming for fewer **P1 incidents** and faster resolution times directly impacts business continuity.  
-- **Quantifiable & measurable:** Every KR has a clear metric (incident count, resolution time, deflection rate, etc.).  
-- **Aligned with business goals:** Reducing downtime improves productivity across the organization.  
-- **Focused on outcomes:** Instead of just resolving tickets, the OKR prioritizes **preventing** issues and increasing efficiency.  
+Inform affected users once it’s restored.
 
-By adopting OKRs, IT Support Analysts can **drive meaningful improvements, enhance user experience, and contribute to business success** beyond just resolving tickets.
+If you provide:
+
+Web server or hosting environment
+
+Whether internal CA or external certificate authority
+
+OS (Linux or Windows)
+
+…I can give exact commands/config steps.
+
+
+2/2
+
+
+
+
+
+
+You said:
+What  is iis
+
+
+ChatGPT said:
+Great question.
+
+🧾 What is IIS?
+IIS stands for Internet Information Services. It is a web server created by Microsoft that runs on Windows Server operating systems.
+
+🔧 What Does IIS Do?
+IIS is used to:
+
+Host websites and web applications (like .NET, HTML, PHP)
+
+Manage HTTPS/SSL certificates
+
+Serve static and dynamic content
+
+Configure bindings for custom domains (e.g., chemops-cg-resources.mmm.com)
+
+Handle authentication, logging, and URL rewriting
+
+🖥️ Where You’ll Find IIS
+You’ll typically see IIS in:
+
+Corporate intranet environments
+
+Windows Server setups
+
+Applications written in ASP.NET or used with Microsoft ecosystems
+
+🛠️ Common IIS Tools
+If you're managing a Windows server, you might use:
+
+IIS Manager (GUI): for configuring sites, certificates, bindings
+
+PowerShell: to script deployments or renewals
+
+MMC (Microsoft Management Console): for handling certificates
+
+🧪 How to Check If a Server Uses IIS
+If you have access to the server, go to Control Panel > Administrative Tools > IIS Manager, or run:
+
+bash
+Copy code
+inetmgr
+Or check HTTP response headers in the browser or with curl:
+
+bash
+Copy code
+curl -I https://yourdomain.com
+If you see something like:
+
+arduino
+Copy code
+Server: Microsoft-IIS/10.0
+…then the server is running IIS.
+
+If you're unsure whether your site is hosted on IIS or something else, I can help you figure it out—just let me know what kind of access or tools you have.
+
+
+
+
+
+
+You said:
+What is mmc
+
+
+ChatGPT said:
+Great follow-up!
+
+🧾 What is MMC?
+MMC stands for Microsoft Management Console. It’s a Windows tool that provides a framework to manage various system components using snap-ins (modular management tools).
+
+🔧 What is MMC Used For?
+MMC lets you manage system settings like:
+
+Certificates
+
+Device Manager
+
+Group Policy
+
+Services
+
+Disk Management
+
+Event Viewer
+
+It’s especially useful for administrators who want centralized access to tools.
+
+📌 How to Open MMC
+Press Windows + R
+
+Type: mmc
+
+Hit Enter
+
+You’ll see a blank console.
+
+➕ How to Add Snap-ins (e.g., Certificates)
+In MMC, go to File > Add/Remove Snap-in
+
+Choose a snap-in, such as Certificates
+
+Click Add, then choose:
+
+My user account
+
+Service account
+
+Computer account (used for server certificates)
+
+Click Finish > OK
+
+✅ Common Use Case: Fixing Certificates
+To renew or replace SSL certificates on a Windows server:
+
+Open MMC
+
+Add the Certificates snap-in for Computer account
+
+Navigate to Certificates (Local Computer) > Personal > Certificates
+
+Find the expired cert and renew or replace it
+
+Let me know if you want a step-by-step with screenshots or commands based on your server type.
+
+
+
+
+
+
