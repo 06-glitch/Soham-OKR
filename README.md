@@ -1,190 +1,135 @@
-Open MMC → Add Certificates snap-in → Local Computer.
-
-Locate your expired cert under Personal > Certificates.
-
-Renew or import a new certificate:
-
-If using a corporate CA, request a new one.
-
-If using a public CA, upload the CSR, get a cert, and import it.
-
-Bind the new certificate in IIS > Bindings.
-
-Restart IIS:
-
-bash
-Copy code
-iisreset
-Scenario B: Using Apache or Nginx (Linux)
-Update your .crt, .key, and .ca-bundle files as mentioned earlier, then restart the service:
-
-bash
-Copy code
-sudo systemctl reload apache2   # or nginx
-Scenario C: Using Load Balancer or Reverse Proxy
-If you terminate SSL at a load balancer (like AWS ALB, F5, Azure App Gateway):
-
-Go to the load balancer's SSL settings.
-
-Upload the renewed certificate.
-
-Apply and save the configuration.
-
-Final Checks
-Visit https://chemops-cg-resources.mmm.com in a browser to confirm no “Not Secure” warning.
-
-Inform affected users once it’s restored.
-
-If you provide:
-
-Web server or hosting environment
-
-Whether internal CA or external certificate authority
-
-OS (Linux or Windows)
-
-…I can give exact commands/config steps.
-
-
-2/2
-
-
-
-
-
-
-You said:
-What  is iis
-
-
-ChatGPT said:
-Great question.
-
-🧾 What is IIS?
-IIS stands for Internet Information Services. It is a web server created by Microsoft that runs on Windows Server operating systems.
-
-🔧 What Does IIS Do?
-IIS is used to:
-
-Host websites and web applications (like .NET, HTML, PHP)
-
-Manage HTTPS/SSL certificates
-
-Serve static and dynamic content
-
-Configure bindings for custom domains (e.g., chemops-cg-resources.mmm.com)
-
-Handle authentication, logging, and URL rewriting
-
-🖥️ Where You’ll Find IIS
-You’ll typically see IIS in:
-
-Corporate intranet environments
-
-Windows Server setups
-
-Applications written in ASP.NET or used with Microsoft ecosystems
-
-🛠️ Common IIS Tools
-If you're managing a Windows server, you might use:
-
-IIS Manager (GUI): for configuring sites, certificates, bindings
-
-PowerShell: to script deployments or renewals
-
-MMC (Microsoft Management Console): for handling certificates
-
-🧪 How to Check If a Server Uses IIS
-If you have access to the server, go to Control Panel > Administrative Tools > IIS Manager, or run:
-
-bash
-Copy code
-inetmgr
-Or check HTTP response headers in the browser or with curl:
-
-bash
-Copy code
-curl -I https://yourdomain.com
-If you see something like:
-
-arduino
-Copy code
-Server: Microsoft-IIS/10.0
-…then the server is running IIS.
-
-If you're unsure whether your site is hosted on IIS or something else, I can help you figure it out—just let me know what kind of access or tools you have.
-
-
-
-
-
-
-You said:
-What is mmc
-
-
-ChatGPT said:
-Great follow-up!
-
-🧾 What is MMC?
-MMC stands for Microsoft Management Console. It’s a Windows tool that provides a framework to manage various system components using snap-ins (modular management tools).
-
-🔧 What is MMC Used For?
-MMC lets you manage system settings like:
-
-Certificates
-
-Device Manager
-
-Group Policy
-
-Services
-
-Disk Management
-
-Event Viewer
-
-It’s especially useful for administrators who want centralized access to tools.
-
-📌 How to Open MMC
-Press Windows + R
-
-Type: mmc
-
-Hit Enter
-
-You’ll see a blank console.
-
-➕ How to Add Snap-ins (e.g., Certificates)
-In MMC, go to File > Add/Remove Snap-in
-
-Choose a snap-in, such as Certificates
-
-Click Add, then choose:
-
-My user account
-
-Service account
-
-Computer account (used for server certificates)
-
-Click Finish > OK
-
-✅ Common Use Case: Fixing Certificates
-To renew or replace SSL certificates on a Windows server:
-
-Open MMC
-
-Add the Certificates snap-in for Computer account
-
-Navigate to Certificates (Local Computer) > Personal > Certificates
-
-Find the expired cert and renew or replace it
-
-Let me know if you want a step-by-step with screenshots or commands based on your server type.
-
-
-
-
-
-
+string ls_err_msg
+string ls_storage_loc_nbr
+string ls_location_exists
+string ls_current_storage_loc_type_code
+string ls_active_status_ind
+string ls_storage_loc_type_code
+long li_return
+long ll_rc
+
+ls_storage_loc_nbr = sle_storage_loc_nbr.text
+
+IF ls_storage_loc_nbr = '' THEN
+    messagebox("Usage Error", "Trailer Nbr is a required field.")
+    RETURN
+END IF
+
+IF rb_transit.Checked THEN
+    ls_storage_loc_type_code = "TRANSIT"
+ELSEIF rb_storage.Checked THEN
+    ls_storage_loc_type_code = "TRAILBULK"
+ELSE
+    messagebox("Usage Error", "Trailer Type is required.")
+    RETURN
+END IF
+
+ls_location_exists = "N"
+SELECT 'Y', Storage_Loc_Type_Code, Active_Status_Ind
+INTO :ls_location_exists, :ls_current_storage_loc_type_code, :ls_active_status_ind
+FROM t_Storage_Location
+WHERE t_Storage_Location.Storage_Loc_Nbr = :ls_storage_loc_nbr;
+
+IF SQLCA.sqlcode < 0 THEN
+    ls_err_msg = sqlca.sqlerrtext
+    messagebox("Error", "Looking for Storage Location information: " + ls_err_msg)
+    RETURN
+END IF
+
+IF (ls_location_exists = "Y") THEN
+    IF (ls_current_storage_loc_type_code <> "TRAILBULK") AND (ls_current_storage_loc_type_code <> "TRANSIT") THEN
+        messagebox("Usage Error", "Storage Location " + ls_storage_loc_nbr + " already exists and is not a trailer type location.")
+        RETURN
+    END IF
+
+    IF (ls_active_status_ind = "I") THEN
+        ll_rc = MessageBox("Warning", "In-Active Storage Location for Trailer Nbr " + ls_storage_loc_nbr + " already exists.~r~nWould you like to re-activate it?", Exclamation!, YesNo!, 1)
+        IF ll_rc = 1 THEN
+            UPDATE t_Storage_Location
+            SET Active_Status_Ind = 'A',
+                Storage_Loc_Type_Code = :ls_storage_loc_type_code
+            WHERE t_Storage_Location.Storage_Loc_Nbr = :ls_storage_loc_nbr
+            USING SQLCA;
+
+            IF SQLCA.sqlcode <> 0 THEN
+                ls_err_msg = sqlca.sqlerrtext
+                messagebox("Error", "Update of Storage Location~''s Active_Status_Ind failed: " + ls_err_msg)
+                RETURN
+            END IF
+        ELSE
+            RETURN // canceled
+        END IF
+
+    ELSEIF (ls_current_storage_loc_type_code <> ls_storage_loc_type_code) THEN
+        ll_rc = MessageBox("Warning", "Are you sure you want to change the Storage Location Type Code from " + Trim(ls_current_storage_loc_type_code) + " to " + ls_storage_loc_type_code + "?", Exclamation!, YesNo!, 1)
+        IF ll_rc = 1 THEN
+            UPDATE t_Storage_Location
+            SET Storage_Loc_Type_Code = :ls_storage_loc_type_code
+            WHERE t_Storage_Location.Storage_Loc_Nbr = :ls_storage_loc_nbr
+            USING SQLCA;
+
+            IF SQLCA.sqlcode <> 0 THEN
+                ls_err_msg = sqlca.sqlerrtext
+                messagebox("Error", "Update of Storage Location~''s Storage_Loc_Type_Code failed: " + ls_err_msg)
+                RETURN
+            END IF
+        ELSE
+            RETURN // canceled
+        END IF
+    END IF
+
+ELSE
+    SQLCA.ap_add_trailer_storage_loc(ls_storage_loc_nbr, ls_storage_loc_type_code)
+    IF SQLCA.sqlcode <> 0 THEN
+        ls_err_msg = sqlca.sqlerrtext  
+        messagebox("Usage Error", "ap_Add_Trailer_Storage_Loc failed: " + ls_err_msg)
+        RETURN
+    END IF
+END IF
+
+// Update the Warehouse Storage Handling Codes
+IF ls_storage_loc_type_code = "TRANSIT" AND Left(ls_storage_loc_nbr, 2) = "OB" THEN
+    DELETE FROM t_Storage_Loc_Whse_Storage_Handling_Xref
+    WHERE Storage_Loc_Nbr = :ls_storage_loc_nbr;
+
+    IF SQLCA.sqlcode <> 0 THEN
+        ls_err_msg = sqlca.sqlerrtext
+        messagebox("Usage Warning", "Cleanup of Warehouse Storage Handling Codes failed. Contact Inventory Accounting: " + ls_err_msg)
+    END IF
+
+    INSERT INTO t_Storage_Loc_Whse_Storage_Handling_Xref (MMM_Facility_Code, Storage_Loc_Nbr, Warehouse_Storage_Handling_Code)
+        SELECT 'HT', :ls_storage_loc_nbr, '2'
+        UNION SELECT 'HT', :ls_storage_loc_nbr, '9'
+        UNION SELECT 'HT', :ls_storage_loc_nbr, 'A'
+        UNION SELECT 'HT', :ls_storage_loc_nbr, 'E'
+        UNION SELECT 'HT', :ls_storage_loc_nbr, 'F';
+
+    IF SQLCA.sqlcode <> 0 THEN
+        ls_err_msg = sqlca.sqlerrtext
+        messagebox("Usage Warning", "Insert of Warehouse Storage Handling Codes failed. Contact Inventory Accounting: " + ls_err_msg)
+    END IF
+
+ELSEIF ls_storage_loc_type_code = "TRAILBULK" THEN
+    DELETE FROM t_Storage_Loc_Whse_Storage_Handling_Xref
+    WHERE Storage_Loc_Nbr = :ls_storage_loc_nbr;
+
+    IF SQLCA.sqlcode <> 0 THEN
+        ls_err_msg = sqlca.sqlerrtext
+        messagebox("Usage Warning", "Cleanup of Warehouse Storage Handling Codes failed. Contact Inventory Accounting: " + ls_err_msg)
+    END IF
+
+    INSERT INTO t_Storage_Loc_Whse_Storage_Handling_Xref (MMM_Facility_Code, Storage_Loc_Nbr, Warehouse_Storage_Handling_Code)
+        SELECT 'HT', :ls_storage_loc_nbr, 'A'
+        UNION SELECT 'HT', :ls_storage_loc_nbr, 'E';
+
+    IF SQLCA.sqlcode <> 0 THEN
+        ls_err_msg = sqlca.sqlerrtext
+        messagebox("Usage Warning", "Insert of Warehouse Storage Handling Codes failed. Contact Inventory Accounting: " + ls_err_msg)
+    END IF
+END IF
+
+IF Parent.cbx_print_barcode.Checked THEN
+    Parent.triggerEvent("ue_barcode_rpt")
+END IF
+
+close(parent)
+RETURN
